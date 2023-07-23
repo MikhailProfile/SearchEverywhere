@@ -2,6 +2,7 @@
 	"name": "ads-searcheverywhere",
 	"displayName": "Search Everywhere",
 	"description": "Search tables, views, stored procedures, functions by name or code.",
+    "icon": "png/search.png",
 	"publisher": "MikhailT",
 	"version": "1.0.0",
 	"engines": {
@@ -37,6 +38,10 @@
                 "command": "ads-searcheverywhere.searchAndCacheClear"
             }
 		]
+	},
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/MikhailProfile/SearchEverywhere.git"
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
