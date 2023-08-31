@@ -3,7 +3,7 @@
 import * as vscode from "vscode";
 import { window } from "vscode";
 import * as azdata from "azdata";
-import { SimpleExecuteResult } from "azdata";
+import { TableColumnsQuery, MinQuery } from "./queryConstants";
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "ads-searcheverywhere" is now active!');
@@ -11,41 +11,45 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("ads-searcheverywhere.search", async () => {
 			let connection = await GetConnection();
-			let connectionId = connection.connectionId;
-
-			await GetItemsAndShowQuickPick(connectionId, connection);
+			
+			await GetItemsAndShowQuickPick(connection);
 		})
 	);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("ads-searcheverywhere.searchAndCacheClear", async () => {
 			let connection = await GetConnection();
-			let connectionId = connection.connectionId;
 			var cache = require("memory-cache");
-			cache.clear(connectionId);
-			await GetItemsAndShowQuickPick(connectionId, connection);
+			cache.clear(connection.connectionId + connection.databaseName);
+			await GetItemsAndShowQuickPick(connection);
 		})
 	);
 }
 
 async function GetItemsAndShowQuickPick(
-	connectionId: string,
 	connection: azdata.connection.ConnectionProfile
 ) {
 	try {
 		var cache = require("memory-cache");
 		let items: QuickPickItemExtended[];
 
-		items = cache.get(connectionId);
+		items = cache.get(connection.connectionId + connection.databaseName);
 		if (items === null) {
-			let connectionUri = await azdata.connection.getUriForConnection(connectionId);
+			let connectionUri = await azdata.connection.getUriForConnection(connection.connectionId);
+
+			const connectionProvider = azdata.dataprotocol.getProvider<azdata.ConnectionProvider>(
+				"MSSQL",
+				azdata.DataProviderType.ConnectionProvider
+			);
+			await connectionProvider.changeDatabase(connectionUri, connection.databaseName);
+
 			let queryProvider = azdata.dataprotocol.getProvider<azdata.QueryProvider>(
 				connection.providerId,
 				azdata.DataProviderType.QueryProvider
 			);
 
 			items = await getMsSqlItems(queryProvider, connectionUri);
-			cache.put(connectionId, items);
+			cache.put(connection.connectionId + connection.databaseName, items);
 		}
 
 		showQuickPick(items, connection);
@@ -57,15 +61,9 @@ async function GetItemsAndShowQuickPick(
 async function GetConnection() {
 	let connection = await azdata.connection.getCurrentConnection();
 	if (!connection) {
-		let connections = await azdata.connection.getActiveConnections();
-		if (connections.length === 0) {
-			throw new Error("Connect to server before use SearchEverywhere.");
-		}
-
-		let firstConnection = connections[0];
-		const connectionUri = await azdata.connection.getUriForConnection(firstConnection.connectionId);
-		connection = await azdata.connection.getConnection(connectionUri);
+		throw new Error("Connect to server before use SearchEverywhere.");
 	}
+	
 	return connection;
 }
 
@@ -83,24 +81,8 @@ async function getMsSqlItems(
 				message: `Loading server items...`,
 			});
 
-			let query = `SELECT o.name AS name
-    , 'TABLE' AS type
-    , '' AS DEFINITION
-    , ss.name AS schemaName
-FROM sys.objects AS o
-JOIN sys.schemas AS ss ON o.schema_id = ss.schema_id
-WHERE type = 'U'
-
-UNION ALL
-
-SELECT DISTINCT o.name AS name
-    , o.type_desc AS type
-    , m.DEFINITION AS DEFINITION
-    , ss.name AS schemaName
-FROM sys.sql_modules m
-JOIN sys.objects o ON m.object_id = o.object_id
-JOIN sys.schemas AS ss ON o.schema_id = ss.schema_id
-`;
+			var tableColumns = GetConfiguration("columnsInTable");
+			let query = tableColumns ? TableColumnsQuery : MinQuery;
 
 			let results = await queryProvider.runQueryAndReturn(connectionUri, query);
 			let cell = results.rows;
@@ -234,4 +216,9 @@ async function insertScriptToExistingOrNewEditor(script: azdata.ScriptingResult)
 			edit.insert(new vscode.Position(0, 0), script.script);
 		});
 	}
+}
+
+function GetConfiguration(configName : string) {
+	const settings = vscode.workspace.getConfiguration("searchEverywhere");
+	return settings[configName];	
 }
