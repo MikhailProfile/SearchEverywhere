@@ -16,3 +16,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 
 - The issue with changing database in one connection.
+
+
+## [1.1.1] - 2023-09-05
+
+### Fixed
+
+- Minor bug fixes for a request with table columns
