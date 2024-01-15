@@ -23,3 +23,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 
 - Minor bug fixes for a request with table columns
+
+
+## [1.1.2] - 2023-10-27
+
+### Fixed
+
+- Keybinding to clear cache changed to CTRL + ALT + T
+- Default action parameters added. You can naw choose whuch action run for tables, views, stored procedures, functions.

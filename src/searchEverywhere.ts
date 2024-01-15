@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { window } from "vscode";
 import * as azdata from "azdata";
 import { TableColumnsQuery, MinQuery } from "./queryConstants";
+import { SqlObjectType } from "./sqlObjectType";
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "ads-searcheverywhere" is now active!');
@@ -17,12 +18,15 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand("ads-searcheverywhere.searchAndCacheClear", async () => {
-			let connection = await GetConnection();
-			var cache = require("memory-cache");
-			cache.clear(connection.connectionId + connection.databaseName);
-			await GetItemsAndShowQuickPick(connection);
-		})
+		vscode.commands.registerCommand(
+			"ads-searcheverywhere.searchAndCacheClear",
+			async () => {
+				let connection = await GetConnection();
+				var cache = require("memory-cache");
+				cache.clear(connection.connectionId + connection.databaseName);
+				await GetItemsAndShowQuickPick(connection);
+			}
+		)
 	);
 }
 
@@ -61,7 +65,7 @@ async function GetItemsAndShowQuickPick(
 async function GetConnection() {
 	let connection = await azdata.connection.getCurrentConnection();
 	if (!connection) {
-		throw new Error("Connect to server before use SearchEverywhere.");
+		throw new Error("Please, connect to server before use SearchEverywhere.");
 	}
 	
 	return connection;
@@ -81,8 +85,7 @@ async function getMsSqlItems(
 				message: `Loading server items...`,
 			});
 
-			var tableColumns = GetConfiguration("columnsInTable");
-			let query = tableColumns ? TableColumnsQuery : MinQuery;
+			let query = GetConfiguration("columnsInTable") ? TableColumnsQuery : MinQuery;
 
 			let results = await queryProvider.runQueryAndReturn(connectionUri, query);
 			let cell = results.rows;
@@ -168,54 +171,88 @@ export async function showQuickPick(
 	await handleResult(result, connection);
 }
 async function handleResult(result: QuickPickItemExtended, connection: azdata.connection.ConnectionProfile) {
-	let provider = azdata.dataprotocol.getProvider<azdata.ScriptingProvider>(
-		"MSSQL",
-		azdata.DataProviderType.ScriptingProvider
-	);
+	
+	let command = "";
+	
+	switch (result?.description!) {
+		case SqlObjectType.Table:
+			command = GetConfiguration("defaultTableAction");
+			break;
+		case SqlObjectType.StoredProcedure:
+			command = GetConfiguration("defaultStoredProcedureAction");
+			break;
+		case SqlObjectType.View:
+			command = GetConfiguration("defaultViewAction");
+			break;
+		case SqlObjectType.UserDefinedFunction:
+			command = GetConfiguration("defaultUserDefinedFunctionAction");
+			break;
+		default:
+			vscode.window.showWarningMessage(`Unknown type of object:${result?.description}.`);
+			return;
+	} 
+	
+	//let nodes = await azdata.objectexplorer.getActiveConnectionNodes();
+	//let index = nodes.findIndex((item) => item.nodePath === connection.serverName);
 
-	let paramDetails: azdata.ScriptingParamDetails = {
-		filePath: "",
-		scriptCompatibilityOption: "",
-		targetDatabaseEngineEdition: "",
-		targetDatabaseEngineType: "",
-	};
-	// "Table", "StoredProcedure", "View", "UserDefinedFunction",
-	let customMetadata: azdata.ObjectMetadata = {
-		metadataType: 0,
-		metadataTypeName: result?.description!,
-		urn: "",
-		name: result.objectName!,
-		schema: result.schemaName!,
-	};
-	let scriptOperation =
-		result?.description! === "StoredProcedure" || result?.description! === "UserDefinedFunction"
-			? azdata.ScriptOperation.Alter
-			: azdata.ScriptOperation.Select;
+	// if (index === -1) {
+	// 	vscode.window.showWarningMessage("Please, open server object explorer first.");
+	// 	return;
+	// }
+	//let connections = await azdata.connection.getActiveConnections();
+	
+	var activeNodes = await azdata.objectexplorer.getActiveConnectionNodes();
+	for (let connect of activeNodes) {
+		var node = await azdata.objectexplorer.findNodes(
+			connect.connectionId,
+			result?.description!,
+			result.schemaName!,
+			result.objectName!,
+			connection.databaseName,
+			[]
+		);
+		if (node.length === 0) {
+			continue;
+		}
+		let profile: IConnectionProfile = {
+			id: connect.connectionId,
+		};
 
-	const connectionUri = await azdata.connection.getUriForConnection(connection.connectionId);
-	let script = await provider.scriptAsOperation(
-		connectionUri,
-		scriptOperation,
-		customMetadata,
-		paramDetails
-	);
+		let context: ObjectExplorerActionsContext = {
+			connectionProfile: profile,
+			nodeInfo: node[0],
+			isConnectionNode: false,
+		};
 
-	await insertScriptToExistingOrNewEditor(script);
+		await vscode.commands.executeCommand(command, context);
+		return;
+	}
+	vscode.window.showErrorMessage("Can't find the object. Try to open object explorer.");	
 }
 
+export class ObjectExplorerActionsContext {
+	public connectionProfile?: IConnectionProfile;
+	public nodeInfo?: azdata.NodeInfo;
+	public isConnectionNode: boolean = false;
+}
+export interface IConnectionProfile {
+	id: string;
+}
+
+
 async function insertScriptToExistingOrNewEditor(script: azdata.ScriptingResult) {
-	let editor = vscode.window.activeTextEditor;
+	// let editor = vscode.window.activeTextEditor;
 
-	if (editor?.document.getText().length !== 0) {
-		await vscode.commands.executeCommand("newQuery");
-	}
-	editor = vscode.window.activeTextEditor;
+	// if (editor?.document.getText().length !== 0) {
+	// 	await vscode.commands.executeCommand("newQuery");
+	// }
+	// editor = vscode.window.activeTextEditor;
 
-	if (script !== undefined && editor !== undefined) {
-		editor.edit((edit) => {
-			edit.insert(new vscode.Position(0, 0), script.script);
-		});
-	}
+	// if (script !== undefined && editor !== undefined) {
+	// 	editor.edit((edit) => {
+	// 		edit.insert(new vscode.Position(0, 0), script.script);
+	// 	});
+	// }
 }
 
 function GetConfiguration(configName : string) {

@@ -4,7 +4,7 @@
 	"description": "Search tables, views, stored procedures, functions by name or code.",
     "icon": "png/search.png",
 	"publisher": "MikhailT",
-	"version": "1.1.1",
+	"version": "1.2.1",
 	"engines": {
 		"vscode": "^1.39.0",
 		"azdata": "*"
@@ -35,7 +35,55 @@
         	"searchEverywhere.columnsInTable": {
 				"type": "boolean",
                 "default": false,
-                "description": "Add columns information to Tables(could have performance impact)"
+                "description": "Add columns information to Tables(could have performance impact)",
+				"order" : 0
+            	},
+			"searchEverywhere.defaultTableAction": {
+				"type": "string",
+                "default": "objectExplorer.scriptAsSelect",
+                "description": "Default action for Table types",
+				"order" : 1,
+				"enum": [
+	              "objectExplorer.scriptAsSelect",
+	              "objectExplorer.scriptAsEdit",
+	              "objectExplorer.scriptAsCreate",
+	              "objectExplorer.scriptAsDelete"
+	            ]
+            	},
+				"searchEverywhere.defaultStoredProcedureAction": {
+				"type": "string",
+                "default": "objectExplorer.scriptAsAlter",
+                "description": "Default action for Strored Procedure types",
+				"order" : 2,
+				"enum": [
+	              "objectExplorer.scriptAsCreate",
+	              "objectExplorer.scriptAsDelete",
+	              "objectExplorer.scriptAsExecute",
+	              "objectExplorer.scriptAsAlter"
+	            ]
+            	},
+				"searchEverywhere.defaultViewAction": {
+				"type": "string",
+                "default": "objectExplorer.scriptAsSelect",
+                "description": "Default action for View types",
+				"order" : 3,
+				"enum": [
+	              "objectExplorer.scriptAsSelect",
+	              "objectExplorer.scriptAsCreate",
+	              "objectExplorer.scriptAsDelete",
+	              "objectExplorer.scriptAsAlter"	              
+	            ]
+            	},
+				"searchEverywhere.defaultUserDefinedFunctionAction": {
+				"type": "string",
+                "default": "objectExplorer.scriptAsAlter",
+                "description": "Default action for UserDefinedFunction types",
+				"order" : 4,
+				"enum": [
+	              "objectExplorer.scriptAsCreate",
+	              "objectExplorer.scriptAsDelete",
+	              "objectExplorer.scriptAsAlter"
+	            ]
             	}
 			}
 		 },
@@ -45,7 +93,7 @@
                 "command": "ads-searcheverywhere.search"
             },
 			{
-                "key": "ctrl+shift+t",
+                "key": "ctrl+alt+t",
                 "command": "ads-searcheverywhere.searchAndCacheClear"
             }
 		]
