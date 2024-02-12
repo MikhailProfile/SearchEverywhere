@@ -6,7 +6,7 @@ To start searching execute `Search Everywhere` command or press `Crtl + T`.
 
 First time opening search bar could take a time, results are cahed then, to clear the cache execute `Search Everywhere With Cache Clear`  or press `Crtl + Shift + T`. 
 
-For a Tables and Views extension will run `Select top (1000)`, `Alter` for stored procedures and functions. 
+For a Tables and Views extension will run `Select top (1000)`, `Alter` for stored procedures and functions. This behavior can be changed by modifying the `viewScriptOperation` and `tableScriptOperation` extension settings.
 
  *<a href="https://www.flaticon.com/free-icons/ui" title="ui icons">Extension icon created by apien - Flaticon</a>*
 

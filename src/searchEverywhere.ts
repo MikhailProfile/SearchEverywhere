@@ -167,6 +167,7 @@ export async function showQuickPick(
 
 	await handleResult(result, connection);
 }
+
 async function handleResult(result: QuickPickItemExtended, connection: azdata.connection.ConnectionProfile) {
 	let provider = azdata.dataprotocol.getProvider<azdata.ScriptingProvider>(
 		"MSSQL",
@@ -187,10 +188,7 @@ async function handleResult(result: QuickPickItemExtended, connection: azdata.co
 		name: result.objectName!,
 		schema: result.schemaName!,
 	};
-	let scriptOperation =
-		result?.description! === "StoredProcedure" || result?.description! === "UserDefinedFunction"
-			? azdata.ScriptOperation.Alter
-			: azdata.ScriptOperation.Select;
+	let scriptOperation = GetScriptOperation(result?.description!);
 
 	const connectionUri = await azdata.connection.getUriForConnection(connection.connectionId);
 	let script = await provider.scriptAsOperation(
@@ -221,4 +219,21 @@ async function insertScriptToExistingOrNewEditor(script: azdata.ScriptingResult)
 function GetConfiguration(configName : string) {
 	const settings = vscode.workspace.getConfiguration("searchEverywhere");
 	return settings[configName];	
+}
+
+function GetScriptOperation(objectType: string): azdata.ScriptOperation {
+	switch (objectType) {
+		case 'Table': return scriptOperation(GetConfiguration('tableScriptOperation'));
+		case 'View': return scriptOperation(GetConfiguration('viewScriptOperation'));
+		default: return azdata.ScriptOperation.Alter;
+	}
+}
+
+function scriptOperation(operation: string): azdata.ScriptOperation {
+	switch (operation) {
+		case 'Select': return azdata.ScriptOperation.Select;
+		case 'Create': return azdata.ScriptOperation.Create;
+		case 'Alter': return azdata.ScriptOperation.Alter;
+		default: return azdata.ScriptOperation.Select;
+	}
 }
