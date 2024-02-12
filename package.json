@@ -2,7 +2,7 @@
 	"name": "ads-searcheverywhere",
 	"displayName": "Search Everywhere",
 	"description": "Search tables, views, stored procedures, functions by name or code.",
-    "icon": "png/search.png",
+	"icon": "png/search.png",
 	"publisher": "MikhailT",
 	"version": "1.1.1",
 	"engines": {
@@ -29,30 +29,48 @@
 			}
 		],
 		"configuration": {
-		"type": "object",
-        "title": "Search Everywhere configuration",
-        "properties": {
-        	"searchEverywhere.columnsInTable": {
-				"type": "boolean",
-                "default": false,
-                "description": "Add columns information to Tables(could have performance impact)"
-            	}
+			"type": "object",
+			"title": "Search Everywhere",
+			"properties": {
+				"searchEverywhere.columnsInTable": {
+					"type": "boolean",
+					"default": false,
+					"description": "Add columns information to Tables (could have performance impact)"
+				},
+				"searchEverywhere.viewScriptOperation": {
+					"type": "string",
+					"default": "Select",
+					"enum": [
+						"Select",
+						"Alter"
+					],
+					"description": "The type of script that will be opened upon selecting a view"
+				},
+				"searchEverywhere.tableScriptOperation": {
+					"type": "string",
+					"default": "Select",
+					"enum": [
+						"Select",
+						"Create"
+					],
+					"description": "The type of script that will be opened upon selecting a table"
+				}
 			}
-		 },
-		 "keybindings": [
-            {
-                "key": "ctrl+t",
-                "command": "ads-searcheverywhere.search"
-            },
+		},
+		"keybindings": [
 			{
-                "key": "ctrl+shift+t",
-                "command": "ads-searcheverywhere.searchAndCacheClear"
-            }
+				"key": "ctrl+t",
+				"command": "ads-searcheverywhere.search"
+			},
+			{
+				"key": "ctrl+shift+t",
+				"command": "ads-searcheverywhere.searchAndCacheClear"
+			}
 		]
-	},	
+	},
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/MikhailProfile/SearchEverywhere.git"
+		"type": "git",
+		"url": "https://github.com/MikhailProfile/SearchEverywhere.git"
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
@@ -79,5 +97,11 @@
 	},
 	"dependencies": {
 		"memory-cache": "^0.2.0"
+	},
+	"__metadata": {
+		"id": "101",
+		"publisherDisplayName": "MikhailT",
+		"publisherId": "MikhailT",
+		"isPreReleaseVersion": false
 	}
 }
